@@ -1,61 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Audio Streamer</title>
     <meta charset="UTF-8">
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Translation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
         body {
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: row;
-            text-align: left;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
         }
-        .column {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
+        }
+        .header {
+            background-color: #3f51b5;
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-weight: 300;
+            text-align: center;
+        }
+        .card {
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: #3f51b5;
+            color: white;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .card-content {
+            padding: 16px;
+            max-height: 300px;
             overflow-y: auto;
         }
         .text-display {
             white-space: pre-wrap;
             font-size: 16px;
-            margin: 10px 0;
+            line-height: 1.5;
         }
-        .yellow {
-            color: yellow;
+        .speaker-1 {
+            color: #3f51b5;
         }
-        .cyan {
-            color: cyan;
+        .speaker-2 {
+            color: #f50057;
         }
         .pending {
-            color: #888; /* Grey color for pending sentences */
+            color: #9e9e9e;
             font-style: italic;
-        }
-        h2 {
-            text-align: center;
-            color: #4CAF50;
         }
     </style>
 </head>
 <body>
-    <div class="column">
-        <h2>Doctor</h2>
-        <div id="doctorOriginalTextDisplay" class="text-display"></div>
-        <div id="doctorTranslatedTextDisplay" class="text-display"></div>
+    <div class="header">
+        <h1>Real-Time Translation</h1>
     </div>
-    <div class="column">
-        <h2>Patient</h2>
-        <div id="patientOriginalTextDisplay" class="text-display"></div>
-        <div id="patientTranslatedTextDisplay" class="text-display"></div>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">record_voice_over</i>
+                Original Conversation
+            </div>
+            <div class="card-content">
+                <div id="originalTextDisplay" class="text-display">
+                    <span class="speaker-1">Speaker 1:</span> Hello, how are you today?
+                    <span class="speaker-2">Speaker 2:</span> I'm doing well, thank you. How about you?
+                    <span class="speaker-1">Speaker 1:</span> I'm great, thanks for asking. What are your plans for the weekend?
+                    <span class="speaker-2">Speaker 2:</span> I'm thinking of going hiking. Do you have any recommendations?
+                    <span class="speaker-1">Speaker 1:</span> Oh, that sounds fun! I'd recommend trying the trail at Sunset Peak. The views are amazing!
+                    <span class="speaker-2">Speaker 2:</span> That's a great idea. I'll definitely check it out. Thanks for the suggestion!
+                    <span class="pending">Waiting for more...</span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">translate</i>
+                Translation
+            </div>
+            <div class="card-content">
+                <div id="translatedTextDisplay" class="text-display">
+                    <span class="speaker-1">Hablante 1:</span> Hola, ¿cómo estás hoy?
+                    <span class="speaker-2">Hablante 2:</span> Estoy bien, gracias. ¿Y tú?
+                    <span class="speaker-1">Hablante 1:</span> Estoy genial, gracias por preguntar. ¿Cuáles son tus planes para el fin de semana?
+                    <span class="speaker-2">Hablante 2:</span> Estoy pensando en ir de excursión. ¿Tienes alguna recomendación?
+                    <span class="speaker-1">Hablante 1:</span> ¡Oh, eso suena divertido! Te recomendaría probar el sendero en Sunset Peak. ¡Las vistas son increíbles!
+                    <span class="speaker-2">Hablante 2:</span> Es una gran idea. Definitivamente lo comprobaré. ¡Gracias por la sugerencia!
+                    <span class="pending">Esperando más...</span>
+                </div>
+            </div>
+        </div>
     </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="client.js"></script>
 </body>
 </html>

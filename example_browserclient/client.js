@@ -1,18 +1,14 @@
 let socket;
-let doctorOriginalTextDisplay = document.getElementById('doctorOriginalTextDisplay');
-let doctorTranslatedTextDisplay = document.getElementById('doctorTranslatedTextDisplay');
-let patientOriginalTextDisplay = document.getElementById('patientOriginalTextDisplay');
-let patientTranslatedTextDisplay = document.getElementById('patientTranslatedTextDisplay');
+let originalTextDisplay = document.getElementById('originalTextDisplay');
+let translatedTextDisplay = document.getElementById('translatedTextDisplay');
 let server_available = false;
 let mic_available = false;
-let doctorOriginalSentences = [];
-let doctorTranslatedSentences = [];
-let patientOriginalSentences = [];
-let patientTranslatedSentences = [];
+let originalSentences = [];
+let translatedSentences = [];
 let pendingOriginalSentences = [];
 let transcriptCount = 0;
 let translationCount = 0;
-let lastSpeaker = 'doctor'; // Default to doctor
+let lastSpeaker = 'Doctor'; // Default to Doctor
 
 const serverCheckInterval = 5000; // Check every 5 seconds
 
@@ -62,19 +58,17 @@ function handleTranscript(text, isFullSentence = false) {
 }
 
 function handleTranslation(text, isFullSentence = false) {
-    let speaker = text.startsWith("Doctor:") ? "doctor" : "patient";
+    let speaker = text.startsWith("Doctor:") ? "Doctor" : "Patient";
     lastSpeaker = speaker;
-    let translatedSentences = speaker === "doctor" ? doctorTranslatedSentences : patientTranslatedSentences;
-    let originalSentences = speaker === "doctor" ? doctorOriginalSentences : patientOriginalSentences;
     
     if (isFullSentence) {
         translatedSentences.push(text);
     }
 
-    // Move corresponding original sentence to the correct column
+    // Move corresponding original sentence to the matched sentences
     if (pendingOriginalSentences.length > 0) {
         let originalSentence = pendingOriginalSentences.shift();
-        originalSentences.push(originalSentence.text);
+        originalSentences.push(`${speaker}: ${originalSentence.text}`);
     }
 
     translationCount++;
@@ -82,36 +76,30 @@ function handleTranslation(text, isFullSentence = false) {
 }
 
 function updateDisplay() {
-    displayText(doctorOriginalTextDisplay, doctorOriginalSentences);
-    displayText(doctorTranslatedTextDisplay, doctorTranslatedSentences);
-    displayText(patientOriginalTextDisplay, patientOriginalSentences);
-    displayText(patientTranslatedTextDisplay, patientTranslatedSentences);
-
-    // Display pending sentences in the last active speaker's column
-    let pendingDisplay = lastSpeaker === "doctor" ? doctorOriginalTextDisplay : patientOriginalTextDisplay;
-    displayPendingText(pendingDisplay, pendingOriginalSentences);
+    displayText(originalTextDisplay, originalSentences, pendingOriginalSentences);
+    displayText(translatedTextDisplay, translatedSentences);
 }
 
-function displayText(displayDiv, sentences) {
+function displayText(displayDiv, sentences, pendingSentences = []) {
     let displayedText = sentences.map((sentence, index) => {
         let span = document.createElement('span');
-        span.textContent = sentence + " ";
+        span.textContent = sentence + "\n";
         span.className = index % 2 === 0 ? 'yellow' : 'cyan';
         return span.outerHTML;
     }).join('');
 
+    if (pendingSentences.length > 0) {
+        let pendingText = pendingSentences.map(sentence => {
+            let span = document.createElement('span');
+            span.textContent = `${lastSpeaker}: ${sentence.text}\n`;
+            span.className = 'pending';
+            return span.outerHTML;
+        }).join('');
+        displayedText += pendingText;
+    }
+
     displayDiv.innerHTML = displayedText;
-}
-
-function displayPendingText(displayDiv, pendingSentences) {
-    let pendingText = pendingSentences.map(sentence => {
-        let span = document.createElement('span');
-        span.textContent = sentence.text + " ";
-        span.className = 'pending';
-        return span.outerHTML;
-    }).join('');
-
-    displayDiv.innerHTML += pendingText;
+    displayDiv.scrollTop = displayDiv.scrollHeight; // Auto-scroll to the bottom
 }
 
 function start_msg() {
@@ -123,10 +111,8 @@ function start_msg() {
     else
         message = "👄  start speaking  👄";
     
-    doctorOriginalTextDisplay.innerHTML = message;
-    doctorTranslatedTextDisplay.innerHTML = "";
-    patientOriginalTextDisplay.innerHTML = message;
-    patientTranslatedTextDisplay.innerHTML = "";
+    originalTextDisplay.innerHTML = message;
+    translatedTextDisplay.innerHTML = "";
 }
 
 // Initial connection attempt
