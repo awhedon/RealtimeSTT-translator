@@ -1,10 +1,18 @@
 let socket;
-let originalTextDisplay = document.getElementById('originalTextDisplay');
-let translatedTextDisplay = document.getElementById('translatedTextDisplay');
+let doctorOriginalTextDisplay = document.getElementById('doctorOriginalTextDisplay');
+let doctorTranslatedTextDisplay = document.getElementById('doctorTranslatedTextDisplay');
+let patientOriginalTextDisplay = document.getElementById('patientOriginalTextDisplay');
+let patientTranslatedTextDisplay = document.getElementById('patientTranslatedTextDisplay');
 let server_available = false;
 let mic_available = false;
-let originalSentences = [];
-let translatedSentences = [];
+let doctorOriginalSentences = [];
+let doctorTranslatedSentences = [];
+let patientOriginalSentences = [];
+let patientTranslatedSentences = [];
+let pendingOriginalSentences = [];
+let transcriptCount = 0;
+let translationCount = 0;
+let lastSpeaker = 'doctor'; // Default to doctor
 
 const serverCheckInterval = 5000; // Check every 5 seconds
 
@@ -23,17 +31,15 @@ function connectToServer() {
 
         if (data.type === 'realtime') {
             if (data.text.startsWith("Doctor:") || data.text.startsWith("Patient:")) {
-                displayRealtimeText(data.text, translatedTextDisplay, translatedSentences);
+                handleTranslation(data.text);
             } else {
-                displayRealtimeText(data.text, originalTextDisplay, originalSentences);
+                handleTranscript(data.text);
             }
         } else if (data.type === 'fullSentence') {
             if (data.text.startsWith("Doctor:") || data.text.startsWith("Patient:")) {
-                translatedSentences.push(data.text);
-                displayRealtimeText("", translatedTextDisplay, translatedSentences);
+                handleTranslation(data.text, true);
             } else {
-                originalSentences.push(data.text);
-                displayRealtimeText("", originalTextDisplay, originalSentences);
+                handleTranscript(data.text, true);
             }
         }
     };
@@ -49,15 +55,63 @@ function connectToServer() {
     };
 }
 
-function displayRealtimeText(realtimeText, displayDiv, sentences) {
+function handleTranscript(text, isFullSentence = false) {
+    pendingOriginalSentences.push({text: text, id: transcriptCount});
+    transcriptCount++;
+    updateDisplay();
+}
+
+function handleTranslation(text, isFullSentence = false) {
+    let speaker = text.startsWith("Doctor:") ? "doctor" : "patient";
+    lastSpeaker = speaker;
+    let translatedSentences = speaker === "doctor" ? doctorTranslatedSentences : patientTranslatedSentences;
+    let originalSentences = speaker === "doctor" ? doctorOriginalSentences : patientOriginalSentences;
+    
+    if (isFullSentence) {
+        translatedSentences.push(text);
+    }
+
+    // Move corresponding original sentence to the correct column
+    if (pendingOriginalSentences.length > 0) {
+        let originalSentence = pendingOriginalSentences.shift();
+        originalSentences.push(originalSentence.text);
+    }
+
+    translationCount++;
+    updateDisplay();
+}
+
+function updateDisplay() {
+    displayText(doctorOriginalTextDisplay, doctorOriginalSentences);
+    displayText(doctorTranslatedTextDisplay, doctorTranslatedSentences);
+    displayText(patientOriginalTextDisplay, patientOriginalSentences);
+    displayText(patientTranslatedTextDisplay, patientTranslatedSentences);
+
+    // Display pending sentences in the last active speaker's column
+    let pendingDisplay = lastSpeaker === "doctor" ? doctorOriginalTextDisplay : patientOriginalTextDisplay;
+    displayPendingText(pendingDisplay, pendingOriginalSentences);
+}
+
+function displayText(displayDiv, sentences) {
     let displayedText = sentences.map((sentence, index) => {
         let span = document.createElement('span');
         span.textContent = sentence + " ";
         span.className = index % 2 === 0 ? 'yellow' : 'cyan';
         return span.outerHTML;
-    }).join('') + realtimeText;
+    }).join('');
 
     displayDiv.innerHTML = displayedText;
+}
+
+function displayPendingText(displayDiv, pendingSentences) {
+    let pendingText = pendingSentences.map(sentence => {
+        let span = document.createElement('span');
+        span.textContent = sentence.text + " ";
+        span.className = 'pending';
+        return span.outerHTML;
+    }).join('');
+
+    displayDiv.innerHTML += pendingText;
 }
 
 function start_msg() {
@@ -69,8 +123,10 @@ function start_msg() {
     else
         message = "👄  start speaking  👄";
     
-    originalTextDisplay.innerHTML = message;
-    translatedTextDisplay.innerHTML = "";
+    doctorOriginalTextDisplay.innerHTML = message;
+    doctorTranslatedTextDisplay.innerHTML = "";
+    patientOriginalTextDisplay.innerHTML = message;
+    patientTranslatedTextDisplay.innerHTML = "";
 }
 
 // Initial connection attempt

@@ -29,7 +29,7 @@ if __name__ == '__main__':
 Text to Translate:
 {text}
 
-DO NOT OUTPUT ANYTHING OTHER THAN "Doctor: {{translated text}}" or "Patient: {{translated text}}".
+DO NOT OUTPUT ANYTHING OTHER THAN "Doctor: {{translated text}}" (if the Text to Translate is in English) or "Patient: {{translated text}}" (if the Text to Translate is in Spanish). TRANSLATIONS MUST BE EXTREMELY ACCURATE, AS THIS IS A MEDICAL SETTING.
 """
         output = generate_response__simple(prompt, stream=False)
         return output
@@ -102,35 +102,39 @@ DO NOT OUTPUT ANYTHING OTHER THAN "Doctor: {{translated text}}" or "Patient: {{t
             return output
 
     def text_detected(text):
-        asyncio.new_event_loop().run_until_complete(
-            send_to_client(
-                json.dumps({
-                    'type': 'realtime',
-                    'text': text
-                })
-            )
-        )
+        # asyncio.new_event_loop().run_until_complete(
+        #     send_to_client(
+        #         json.dumps({
+        #             'type': 'realtime',
+        #             'text': text
+        #         })
+        #     )
+        # )
         print(f"Original: {text}", flush=True)
-        translated_text = translate_text(text)
-        asyncio.new_event_loop().run_until_complete(
-            send_to_client(
-                json.dumps({
-                    'type': 'realtime',
-                    'text': translated_text
-                })
-            )
-        )
-        print(f"Translated: {translated_text}", flush=True)
+        # translated_text = translate_text(text)
+        # asyncio.new_event_loop().run_until_complete(
+        #     send_to_client(
+        #         json.dumps({
+        #             'type': 'realtime',
+        #             'text': translated_text
+        #         })
+        #     )
+        # )
+        # print(f"Translated: {translated_text}", flush=True)
 
     recorder_config = {
         'spinner': False,
         'use_microphone': False,
         # 'model': 'large-v2',
-        'model': 'tiny.en',
-        'language': 'en',
+        # 'model': 'tiny.en',
+        # 'model': 'tiny',
+        # 'model': 'base',
+        # 'model': 'small',
+        'model': 'medium',
+        # 'language': 'en',
         'silero_sensitivity': 0.4,
         'webrtc_sensitivity': 2,
-        'post_speech_silence_duration': 0.7,
+        'post_speech_silence_duration': 0.2,
         'min_length_of_recording': 0,
         'min_gap_between_recordings': 0,
         'enable_realtime_transcription': True,

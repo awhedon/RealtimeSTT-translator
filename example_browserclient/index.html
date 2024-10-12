@@ -14,17 +14,20 @@
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: row;
+            text-align: left;
+        }
+        .column {
+            flex: 1;
+            display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
         }
         .text-display {
             white-space: pre-wrap;
             font-size: 16px;
-            margin: 10px;
-            max-width: 800px;
-            width: 100%;
+            margin: 10px 0;
         }
         .yellow {
             color: yellow;
@@ -32,11 +35,27 @@
         .cyan {
             color: cyan;
         }
+        .pending {
+            color: #888; /* Grey color for pending sentences */
+            font-style: italic;
+        }
+        h2 {
+            text-align: center;
+            color: #4CAF50;
+        }
     </style>
 </head>
 <body>
-    <div id="originalTextDisplay" class="text-display"></div>
-    <div id="translatedTextDisplay" class="text-display"></div>
+    <div class="column">
+        <h2>Doctor</h2>
+        <div id="doctorOriginalTextDisplay" class="text-display"></div>
+        <div id="doctorTranslatedTextDisplay" class="text-display"></div>
+    </div>
+    <div class="column">
+        <h2>Patient</h2>
+        <div id="patientOriginalTextDisplay" class="text-display"></div>
+        <div id="patientTranslatedTextDisplay" class="text-display"></div>
+    </div>
     <script src="client.js"></script>
 </body>
 </html>
