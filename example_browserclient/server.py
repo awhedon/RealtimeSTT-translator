@@ -8,6 +8,12 @@ if __name__ == '__main__':
     import numpy as np
     from scipy.signal import resample
     import json
+    import re
+    from ast import literal_eval
+    from openai import OpenAI
+    import os
+
+    openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
     recorder = None
     recorder_ready = threading.Event()
@@ -16,6 +22,84 @@ if __name__ == '__main__':
     async def send_to_client(message):
         if client_websocket:
             await client_websocket.send(message)
+
+    def translate_text(text):
+        prompt = f"""If the Text to Translate below is in English, translate it to Spanish and output "Doctor: {{translated text}}". If the Text to Translate below is in Spanish, translate it to English and output "Patient: {{translated text}}".
+
+Text to Translate:
+{text}
+
+DO NOT OUTPUT ANYTHING OTHER THAN "Doctor: {{translated text}}" or "Patient: {{translated text}}".
+"""
+        output = generate_response__simple(prompt, stream=False)
+        return output
+
+    def extract_first_valid_json(text: str):
+        # Regular expression patterns for potential JSON structures
+        object_pattern = r'\{.*?\}'
+        array_pattern = r'\[.*?\]'
+
+        # Combine the patterns
+        combined_pattern = f'({object_pattern}|{array_pattern})'
+
+        # Search for potential JSON structures
+        matches = re.finditer(combined_pattern, text, re.DOTALL)
+
+        # Try parsing each match as JSON
+        for match in matches:
+            try:
+                # Attempt to parse the matched string as JSON
+                matches = match.group()
+                json_data = json.loads(matches)
+
+                # If successful, return the JSON data
+                return json_data
+            except json.JSONDecodeError as e:
+                print('JSONDecodeError:', e, 'matches:', matches)
+                # try again with different parse function in case the string is encoded in Python dict format
+                try:
+                    matches = match.group()
+                    json_data = literal_eval(matches)
+                    return json_data
+                except ValueError:
+                    # If parsing fails, continue to the next match
+                    continue
+
+        # No valid JSON found
+        return {}
+    
+    def generate_response__simple(prompt: str, variable_dict = {}, stream: bool = True, json_mode: bool = False):
+        print('generating...')
+        for key in variable_dict:
+            prompt = prompt.replace(key, variable_dict[key])
+        if stream:
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                stream=True
+            )
+
+            def generate():
+                for chunk in response:
+                    if chunk.choices[0].delta.content is not None:
+                        yield chunk.choices[0].delta.content
+
+            return generate()
+        else:
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                stream=False
+            )
+
+            output = response.choices[0].message.content
+            if json_mode:
+                output = extract_first_valid_json(output)
+            return output
 
     def text_detected(text):
         asyncio.new_event_loop().run_until_complete(
@@ -26,12 +110,23 @@ if __name__ == '__main__':
                 })
             )
         )
-        print(f"\r{text}", flush=True, end='')
+        print(f"Original: {text}", flush=True)
+        translated_text = translate_text(text)
+        asyncio.new_event_loop().run_until_complete(
+            send_to_client(
+                json.dumps({
+                    'type': 'realtime',
+                    'text': translated_text
+                })
+            )
+        )
+        print(f"Translated: {translated_text}", flush=True)
 
     recorder_config = {
         'spinner': False,
         'use_microphone': False,
-        'model': 'large-v2',
+        # 'model': 'large-v2',
+        'model': 'tiny.en',
         'language': 'en',
         'silero_sensitivity': 0.4,
         'webrtc_sensitivity': 2,
@@ -60,7 +155,17 @@ if __name__ == '__main__':
                     })
                 )
             )
-            print(f"\rSentence: {full_sentence}")
+            print(f"Full sentence: {full_sentence}")
+            translated_sentence = translate_text(full_sentence)
+            asyncio.new_event_loop().run_until_complete(
+                send_to_client(
+                    json.dumps({
+                        'type': 'fullSentence',
+                        'text': translated_sentence
+                    })
+                )
+            )
+            print(f"Translated full sentence: {translated_sentence}")
 
     def decode_and_resample(
             audio_data,
