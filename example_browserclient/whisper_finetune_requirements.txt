@@ -1,0 +1,1 @@
+pip install transformers datasets torch evaluate google-cloud-speech librosa soundfile accelerate audiomentations

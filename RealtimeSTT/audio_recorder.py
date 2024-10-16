@@ -64,14 +64,14 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 INIT_MODEL_TRANSCRIPTION = "tiny"
 INIT_MODEL_TRANSCRIPTION_REALTIME = "tiny"
-INIT_REALTIME_PROCESSING_PAUSE = 0.2
+INIT_REALTIME_PROCESSING_PAUSE = 0.1
 INIT_SILERO_SENSITIVITY = 0.4
 INIT_WEBRTC_SENSITIVITY = 3
-INIT_POST_SPEECH_SILENCE_DURATION = 0.6
+INIT_POST_SPEECH_SILENCE_DURATION = 0.1
 INIT_MIN_LENGTH_OF_RECORDING = 0.5
 INIT_MIN_GAP_BETWEEN_RECORDINGS = 0
 INIT_WAKE_WORDS_SENSITIVITY = 0.6
-INIT_PRE_RECORDING_BUFFER_DURATION = 1.0
+INIT_PRE_RECORDING_BUFFER_DURATION = 0.1
 INIT_WAKE_WORD_ACTIVATION_DELAY = 0.0
 INIT_WAKE_WORD_TIMEOUT = 5.0
 INIT_WAKE_WORD_BUFFER_DURATION = 0.1
@@ -805,12 +805,12 @@ class AudioToTextRecorder:
                     try:
                         if use_groq:
                             print('using groq')
-                            with open(f'/Users/alexanderwhedon/Downloads/stt/groq_{datetime.datetime.today()}.txt', 'w') as f:
-                                f.write(str(datetime.datetime.today()))
+                            # with open(f'/Users/alexanderwhedon/Downloads/stt/groq_{datetime.datetime.today()}.txt', 'w') as f:
+                            #     f.write(str(datetime.datetime.today()))
                             return True
                         else:
-                            with open(f'/Users/alexanderwhedon/Downloads/stt/whisper_{datetime.datetime.today()}.txt', 'w') as f:
-                                f.write(str(datetime.datetime.today()))
+                            # with open(f'/Users/alexanderwhedon/Downloads/stt/whisper_{datetime.datetime.today()}.txt', 'w') as f:
+                            #     f.write(str(datetime.datetime.today()))
                             print('not using groq')
                             segments, info = model.transcribe(
                                 audio,
@@ -1105,8 +1105,8 @@ class AudioToTextRecorder:
             try:
                 if use_groq:
                     print('using groq')
-                    with open(f'/Users/alexanderwhedon/Downloads/stt/groq_{datetime.datetime.today()}.txt', 'w') as f:
-                        f.write(str(datetime.datetime.today()))
+                    # with open(f'/Users/alexanderwhedon/Downloads/stt/groq_{datetime.datetime.today()}.txt', 'w') as f:
+                    #     f.write(str(datetime.datetime.today()))
                     # Write audio to a temporary WAV file
                     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
                         temp_filename = temp_file.name
@@ -1139,8 +1139,8 @@ class AudioToTextRecorder:
                     return transcription
                 else:
                     print('not using groq')
-                    with open(f'/Users/alexanderwhedon/Downloads/stt/whisper_{datetime.datetime.today()}.txt', 'w') as f:
-                        f.write(str(datetime.datetime.today()))
+                    # with open(f'/Users/alexanderwhedon/Downloads/stt/whisper_{datetime.datetime.today()}.txt', 'w') as f:
+                    #     f.write(str(datetime.datetime.today()))
                     self.parent_transcription_pipe.send((self.audio, self.language))
                     status, result = self.parent_transcription_pipe.recv()
                     self._set_state("inactive")

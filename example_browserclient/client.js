@@ -5,9 +5,8 @@ let server_available = false;
 let mic_available = false;
 let originalSentences = [];
 let translatedSentences = [];
-let pendingOriginalSentences = [];
-let transcriptCount = 0;
-let translationCount = 0;
+let pendingOriginalSentence = null;
+let pendingTranslatedSentence = null;
 let lastSpeaker = 'Doctor'; // Default to Doctor
 
 const serverCheckInterval = 5000; // Check every 5 seconds
@@ -27,9 +26,9 @@ function connectToServer() {
 
         if (data.type === 'realtime') {
             if (data.text.startsWith("Doctor:") || data.text.startsWith("Patient:")) {
-                handleTranslation(data.text);
+                handleTranslation(data.text, false);
             } else {
-                handleTranscript(data.text);
+                handleTranscript(data.text, false);
             }
         } else if (data.type === 'fullSentence') {
             if (data.text.startsWith("Doctor:") || data.text.startsWith("Patient:")) {
@@ -51,51 +50,47 @@ function connectToServer() {
     };
 }
 
-function handleTranscript(text, isFullSentence = false) {
-    pendingOriginalSentences.push({text: text, id: transcriptCount});
-    transcriptCount++;
+function handleTranscript(text, isFullSentence) {
+    if (isFullSentence) {
+        originalSentences.push(`${lastSpeaker}: ${text}`);
+        pendingOriginalSentence = null;
+    } else {
+        pendingOriginalSentence = `${lastSpeaker}: ${text}`;
+    }
     updateDisplay();
 }
 
-function handleTranslation(text, isFullSentence = false) {
+function handleTranslation(text, isFullSentence) {
     let speaker = text.startsWith("Doctor:") ? "Doctor" : "Patient";
     lastSpeaker = speaker;
     
     if (isFullSentence) {
         translatedSentences.push(text);
+        pendingTranslatedSentence = null;
+    } else {
+        pendingTranslatedSentence = text;
     }
-
-    // Move corresponding original sentence to the matched sentences
-    if (pendingOriginalSentences.length > 0) {
-        let originalSentence = pendingOriginalSentences.shift();
-        originalSentences.push(`${speaker}: ${originalSentence.text}`);
-    }
-
-    translationCount++;
     updateDisplay();
 }
 
 function updateDisplay() {
-    displayText(originalTextDisplay, originalSentences, pendingOriginalSentences);
-    displayText(translatedTextDisplay, translatedSentences);
+    displayText(originalTextDisplay, originalSentences, pendingOriginalSentence);
+    displayText(translatedTextDisplay, translatedSentences, pendingTranslatedSentence);
 }
 
-function displayText(displayDiv, sentences, pendingSentences = []) {
+function displayText(displayDiv, sentences, pendingSentence = null) {
     let displayedText = sentences.map((sentence, index) => {
         let span = document.createElement('span');
         span.textContent = sentence + "\n";
-        span.className = index % 2 === 0 ? 'yellow' : 'cyan';
+        span.className = sentence.startsWith("Doctor:") ? 'speaker-1' : 'speaker-2';
         return span.outerHTML;
     }).join('');
 
-    if (pendingSentences.length > 0) {
-        let pendingText = pendingSentences.map(sentence => {
-            let span = document.createElement('span');
-            span.textContent = `${lastSpeaker}: ${sentence.text}\n`;
-            span.className = 'pending';
-            return span.outerHTML;
-        }).join('');
-        displayedText += pendingText;
+    if (pendingSentence) {
+        let span = document.createElement('span');
+        span.textContent = pendingSentence + "\n";
+        span.className = 'pending';
+        displayedText += span.outerHTML;
     }
 
     displayDiv.innerHTML = displayedText;
